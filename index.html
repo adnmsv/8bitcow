@@ -1,22 +1,103 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>8bitcow Debug</title>
-</head>
-<body style="margin:0; background:yellow;">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>8bitcow AR Debug</title>
 
-  <!-- This should be impossible to miss -->
-  <div style="
-    position:fixed; inset:0;
-    display:flex; align-items:center; justify-content:center;
-    font: 700 48px system-ui, sans-serif;
-    z-index:2147483647; color:#000;
-    background:rgba(255,255,0,0.85);
-  ">
-    IF YOU SEE THIS, HTML IS RENDERING ✅
+  <style>
+    body { margin:0; font-family: system-ui, sans-serif; background:#000; }
+    #ui {
+      position: fixed;
+      left: 12px; right: 12px; top: 12px;
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      padding: 12px;
+      border-radius: 12px;
+      z-index: 999999;
+      font-size: 14px;
+    }
+    button {
+      padding: 10px 16px;
+      font-size: 14px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+    pre {
+      white-space: pre-wrap;
+      font-size: 12px;
+      margin-top: 8px;
+      color: #ffb3b3;
+    }
+  </style>
+
+  <!-- Reliable CDNs -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"></script>
+</head>
+
+<body>
+  <div id="ui">
+    <div><b>Status:</b> <span id="status">Page loaded</span></div>
+    <button id="startBtn">Start Camera</button>
+    <pre id="errors"></pre>
   </div>
 
+<script>
+  const statusEl = document.getElementById('status');
+  const errorsEl = document.getElementById('errors');
+  const startBtn = document.getElementById('startBtn');
+
+  function logStatus(msg) {
+    statusEl.textContent = msg;
+  }
+
+  function logError(err) {
+    const msg = err?.stack || err?.message || String(err);
+    errorsEl.textContent += msg + "\n\n";
+    console.error(err);
+  }
+
+  window.addEventListener('error', e => logError(e.error || e.message));
+  window.addEventListener('unhandledrejection', e => logError(e.reason));
+
+  startBtn.onclick = async () => {
+    try {
+      logStatus("Initializing MindAR…");
+
+      if (!window.MINDAR?.IMAGE?.MindARThree) {
+        throw new Error("MindAR failed to load (CDN blocked?)");
+      }
+
+      const mindarThree = new window.MINDAR.IMAGE.MindARThree({
+        container: document.body,
+        imageTargetSrc: "./targets.mind"
+      });
+
+      const { renderer, scene, camera } = mindarThree;
+
+      const anchor = mindarThree.addAnchor(0);
+
+      const cube = new THREE.Mesh(
+        new THREE.BoxGeometry(0.5, 0.5, 0.5),
+        new THREE.MeshNormalMaterial()
+      );
+      cube.position.y = 0.25;
+      anchor.group.add(cube);
+
+      logStatus("Requesting camera permission…");
+      await mindarThree.start();
+
+      logStatus("Running — point camera at marker");
+      renderer.setAnimationLoop(() => renderer.render(scene, camera));
+
+    } catch (err) {
+      logStatus("FAILED — see errors");
+      logError(err);
+    }
+  };
+</script>
 </body>
 </html>
