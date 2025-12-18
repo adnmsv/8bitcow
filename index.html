@@ -2,20 +2,36 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Adnan Mousavi</title>
-  <style>
-    body{
-      font-family: system-ui, sans-serif;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      height:100vh;
-      margin:0;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>8bitcow AR Test</title>
+
+  <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
+  <script src="https://unpkg.com/mind-ar@1.2.5/dist/mindar-image-three.prod.js"></script>
+
+  <style> body { margin:0; overflow:hidden; } </style>
 </head>
 <body>
-  <h1>Adnan Mousavi</h1>
+<script>
+(async () => {
+  const mindarThree = new window.MINDAR.IMAGE.MindARThree({
+    container: document.body,
+    imageTargetSrc: 'targets.mind',
+  });
+
+  const { renderer, scene, camera } = mindarThree;
+
+  const anchor = mindarThree.addAnchor(0);
+
+  const cube = new THREE.Mesh(
+    new THREE.BoxGeometry(0.5, 0.5, 0.5),
+    new THREE.MeshNormalMaterial()
+  );
+  cube.position.y = 0.25;
+  anchor.group.add(cube);
+
+  await mindarThree.start();
+  renderer.setAnimationLoop(() => renderer.render(scene, camera));
+})();
+</script>
 </body>
 </html>
