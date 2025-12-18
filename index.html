@@ -81,11 +81,19 @@
         errEl.textContent = '';
 
         if (!window.THREE) throw new Error("THREE not found. Check ./libs/three.min.js");
-        if (!window.MINDAR?.IMAGE?.MindARThree) throw new Error("MindAR not found. Check ./libs/mindar-image-three.prod.js");
+const MindARThree =
+  window.MINDAR?.IMAGE?.MindARThree ||
+  window.MINDARThree ||
+  window.MINDAR?.MindARThree;
+
+if (!MindARThree) {
+  console.log("MindAR globals:", window);
+  throw new Error("MindAR loaded but global not found");
+}
 
         setStatus("Initializing…");
 
-        mindarThree = new window.MINDAR.IMAGE.MindARThree({
+mindarThree = new MindARThree({
           container: document.body,
           imageTargetSrc: "./targets.mind"
         });
