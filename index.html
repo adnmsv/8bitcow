@@ -16,16 +16,26 @@
     font-family: system-ui, -apple-system, sans-serif;
   }
 
-  /* Force MindAR video + canvas fullscreen */
-  video, canvas {
-    position: fixed !important;
-    top: 0;
-    left: 0;
-    width: 100vw !important;
-    height: 100vh !important;
-    object-fit: cover;
-    z-index: 1;
-  }
+  /* Fullscreen camera feed */
+video {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  object-fit: cover !important;
+  z-index: 1 !important;
+}
+
+/* Fullscreen 3D overlay */
+canvas {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 2 !important;
+  background: transparent !important;
+}
+
 
   /* UI overlay stays on top */
   #ui {
