@@ -33,12 +33,14 @@
   </div>
 
   <a-scene
-    mindar-image="imageTargetSrc: ./targets.mind; autoStart: false;"
-    embedded
-    renderer="colorManagement: true;"
-    vr-mode-ui="enabled: false"
-    device-orientation-permission-ui="enabled: false"
-  >
+  mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiLoading: yes; uiScanning: yes;"
+  embedded
+  renderer="colorManagement: true;"
+  vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: false"
+  playsinline
+>
+
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <!-- Target index 0 -->
