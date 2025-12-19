@@ -1,91 +1,72 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>8bitcow AR</title>
 
+  <script src="./libs/aframe.min.js"></script>
+  <script src="./libs/mindar-image-aframe.prod.js"></script>
+
   <style>
-    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000; }
-    video { position:fixed; inset:0; width:100vw; height:100vh; object-fit:cover; z-index:1; }
-    canvas { position:fixed; inset:0; width:100vw; height:100vh; z-index:2; background:transparent; }
-    #ui{
-      position:fixed; top:14px; left:14px; right:14px;
-      background:rgba(0,0,0,0.8); color:#fff; padding:12px; border-radius:12px;
-      z-index:999999; font-family: system-ui, -apple-system, sans-serif;
+    html, body { margin:0; width:100%; height:100%; overflow:hidden; background:#000; }
+    #ui {
+      position: fixed; top: 14px; left: 14px; right: 14px;
+      z-index: 999999;
+      background: rgba(0,0,0,.75); color: #fff;
+      padding: 12px; border-radius: 12px;
+      font-family: system-ui, -apple-system, sans-serif;
+      display:flex; gap:10px; align-items:center; flex-wrap:wrap;
     }
-    button{ border:0; border-radius:10px; padding:10px 14px; font-weight:700; cursor:pointer; background:#2f7d32; color:#fff; }
-    #status{ margin-left:10px; opacity:.9; }
-    #error{ margin-top:8px; font-size:12px; color:#ffb3b3; white-space:pre-wrap; display:none; }
+    button {
+      border:0; border-radius:10px;
+      padding:10px 14px; font-weight:700;
+      cursor:pointer; background:#2f7d32; color:#fff;
+    }
   </style>
 </head>
 
 <body>
   <div id="ui">
     <button id="startBtn">Start Camera</button>
-    <span id="status">Ready</span>
-    <div id="error"></div>
+    <span>Point at marker</span>
   </div>
 
-  <script type="module">
-    import * as THREE from "./libs-esm/three.module.js";
-    import { GLTFLoader } from "./libs-esm/GLTFLoader.js";
-    import { MindARThree } from "./libs-esm/mindar-image-three.prod.js";
+  <a-scene
+    mindar-image="imageTargetSrc: ./targets.mind; autoStart: false;"
+    embedded
+    renderer="colorManagement: true;"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+  >
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    const startBtn = document.getElementById("startBtn");
-    const statusEl = document.getElementById("status");
-    const errorEl  = document.getElementById("error");
+    <!-- Target index 0 -->
+    <a-entity mindar-image-target="targetIndex: 0">
+      <a-entity
+        gltf-model="url(./cow.glb)"
+        position="0 0 0"
+        rotation="90 0 0"
+        scale="0.3 0.3 0.3"
+      ></a-entity>
+    </a-entity>
+  </a-scene>
 
-    function setStatus(t){ statusEl.textContent = t; }
-    function showErr(e){
-      errorEl.style.display = "block";
-      errorEl.textContent = e?.stack || e?.message || String(e);
-      console.error(e);
-    }
+  <script>
+    const startBtn = document.getElementById('startBtn');
+    const sceneEl = document.querySelector('a-scene');
 
-    let mindarThree;
-
-    startBtn.onclick = async () => {
+    startBtn.addEventListener('click', async () => {
       try {
-        errorEl.style.display = "none";
-        errorEl.textContent = "";
-
-        setStatus("Initializing…");
-
-        mindarThree = new MindARThree({
-          container: document.body,
-          imageTargetSrc: "./targets.mind"
-        });
-
-        const { renderer, scene, camera } = mindarThree;
-        renderer.setClearAlpha(0);
-
-        const anchor = mindarThree.addAnchor(0);
-
-        setStatus("Loading cow…");
-        const loader = new GLTFLoader();
-        loader.load(
-          "./cow.glb",
-          (gltf) => {
-            const cow = gltf.scene;
-            cow.scale.set(0.3, 0.3, 0.3);
-            cow.position.set(0, 0, 0);
-            anchor.group.add(cow);
-            setStatus("Requesting camera…");
-          },
-          undefined,
-          (err) => { throw err; }
-        );
-
-        await mindarThree.start();
-        setStatus("Running — point at marker");
-
-        renderer.setAnimationLoop(() => renderer.render(scene, camera));
+        // Start MindAR system
+        const system = sceneEl.systems["mindar-image-system"];
+        await system.start();
+        startBtn.style.display = "none";
       } catch (e) {
-        setStatus("Failed");
-        showErr(e);
+        alert("Failed to start camera. Check permissions.");
+        console.error(e);
       }
-    };
+    });
   </script>
 </body>
 </html>
