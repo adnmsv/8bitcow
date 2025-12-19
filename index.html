@@ -121,7 +121,9 @@ canvas {
       });
 
       const { renderer, scene, camera } = mindarThree;
-      const THREE = window.MINDAR.IMAGE.THREE;
+renderer.setClearAlpha(0);
+const THREE = window.MINDAR.IMAGE.THREE;
+
 
       // Anchor for first marker
       const anchor = mindarThree.addAnchor(0);
