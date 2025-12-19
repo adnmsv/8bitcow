@@ -2,51 +2,90 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
   <title>8bitcow AR</title>
 
   <style>
-    body { margin:0; overflow:hidden; background:#000; font-family: system-ui, -apple-system, sans-serif; }
-    #ui{
-      position:fixed; left:14px; right:14px; top:14px;
-      background:rgba(0,0,0,0.80); color:#fff;
-      padding:12px; border-radius:12px;
-      z-index:2147483647;
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+      font-family: system-ui, -apple-system, sans-serif;
     }
-    button{ border:0; border-radius:10px; padding:10px 14px; font-weight:700; cursor:pointer; }
-    #startBtn{ background:#2f7d32; color:#fff; }
-    #status{ margin-left:10px; opacity:0.95; }
-    #err{ margin-top:8px; font-size:12px; color:#ffb3b3; white-space:pre-wrap; display:none; }
+
+    #ui {
+      position: fixed;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      padding: 12px;
+      border-radius: 12px;
+      z-index: 999999;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #2f7d32;
+      color: white;
+    }
+
+    #status {
+      margin-left: 10px;
+      opacity: 0.9;
+    }
+
+    #error {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #ffb3b3;
+      white-space: pre-wrap;
+      display: none;
+    }
   </style>
 
-  <!-- MindAR v1.1.5 bundle (includes the three integration) -->
+  <!-- MindAR v1.1.5 (includes Three.js internally) -->
   <script src="./libs/mindar-image-three.prod.js"></script>
 </head>
+
 <body>
+
   <div id="ui">
     <button id="startBtn">Start Camera</button>
     <span id="status">Ready</span>
-    <div id="err"></div>
+    <div id="error"></div>
   </div>
 
 <script>
-  const startBtn = document.getElementById('startBtn');
-  const statusEl = document.getElementById('status');
-  const errEl = document.getElementById('err');
+  const startBtn = document.getElementById("startBtn");
+  const statusEl = document.getElementById("status");
+  const errorEl  = document.getElementById("error");
 
-  let mindarThree;
+  let mindarThree = null;
 
-  function setStatus(s){ statusEl.textContent = s; }
-  function showErr(e){
-    errEl.style.display = 'block';
-    errEl.textContent = (e && e.stack) ? e.stack : String(e);
-    console.error(e);
+  function setStatus(text) {
+    statusEl.textContent = text;
+  }
+
+  function showError(err) {
+    errorEl.style.display = "block";
+    errorEl.textContent = err?.stack || err?.message || String(err);
+    console.error(err);
   }
 
   startBtn.onclick = async () => {
     try {
-      errEl.style.display = 'none'; errEl.textContent = '';
-      if (!window.MINDAR?.IMAGE?.MindARThree) throw new Error("MindAR global missing (wrong file/path).");
+      errorEl.style.display = "none";
+      errorEl.textContent = "";
+
+      if (!window.MINDAR?.IMAGE?.MindARThree) {
+        throw new Error("MindAR not loaded");
+      }
 
       setStatus("Initializing…");
 
@@ -56,12 +95,14 @@
       });
 
       const { renderer, scene, camera } = mindarThree;
+      const THREE = window.MINDAR.IMAGE.THREE;
 
+      // Anchor for first marker
       const anchor = mindarThree.addAnchor(0);
 
       // Debug cube
       const cube = new THREE.Mesh(
-        new THREE.BoxGeometry(0.5,0.5,0.5),
+        new THREE.BoxGeometry(0.5, 0.5, 0.5),
         new THREE.MeshNormalMaterial()
       );
       cube.position.y = 0.25;
@@ -71,13 +112,17 @@
       await mindarThree.start();
 
       setStatus("Running — point at marker");
-      renderer.setAnimationLoop(() => renderer.render(scene, camera));
 
-    } catch(e){
+      renderer.setAnimationLoop(() => {
+        renderer.render(scene, camera);
+      });
+
+    } catch (err) {
       setStatus("Failed");
-      showErr(e);
+      showError(err);
     }
   };
 </script>
+
 </body>
 </html>
