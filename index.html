@@ -10,6 +10,28 @@
 
   <style>
     html, body { margin:0; width:100%; height:100%; overflow:hidden; background:#000; }
+
+    /* Force the camera video to be visible and fullscreen */
+    video {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      object-fit: cover !important;
+      z-index: 1 !important;
+      background: #000 !important;
+    }
+
+    /* A-Frame canvas overlay fullscreen, transparent background */
+    canvas {
+      position: fixed !important;
+      inset: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 2 !important;
+      background: transparent !important;
+    }
+
     #ui {
       position: fixed; top: 14px; left: 14px; right: 14px;
       z-index: 999999;
@@ -33,17 +55,15 @@
   </div>
 
   <a-scene
-  mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiLoading: yes; uiScanning: yes;"
-  embedded
-  renderer="colorManagement: true;"
-  vr-mode-ui="enabled: false"
-  device-orientation-permission-ui="enabled: false"
-  playsinline
->
-
+    mindar-image="imageTargetSrc: ./targets.mind; autoStart: false;"
+    embedded
+    renderer="alpha: true; colorManagement: true;"
+    background="transparent: true"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+  >
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- Target index 0 -->
     <a-entity mindar-image-target="targetIndex: 0">
       <a-entity
         gltf-model="url(./cow.glb)"
@@ -55,19 +75,19 @@
   </a-scene>
 
   <script>
-  const startBtn = document.getElementById('startBtn');
-  const sceneEl = document.querySelector('a-scene');
+    const startBtn = document.getElementById('startBtn');
+    const sceneEl = document.querySelector('a-scene');
 
-  startBtn.addEventListener('click', () => {
-    sceneEl.emit('startAR');
-    startBtn.style.display = "none";
-  });
-
-  sceneEl.addEventListener('startAR', () => {
-    const system = sceneEl.systems["mindar-image-system"];
-    system.start();
-  });
-</script>
-
+    startBtn.addEventListener('click', async () => {
+      try {
+        const system = sceneEl.systems["mindar-image-system"];
+        await system.start();
+        startBtn.style.display = "none";
+      } catch (e) {
+        alert("Camera failed. Check Chrome camera permission for github.io");
+        console.error(e);
+      }
+    });
+  </script>
 </body>
 </html>
