@@ -55,20 +55,19 @@
   </a-scene>
 
   <script>
-    const startBtn = document.getElementById('startBtn');
-    const sceneEl = document.querySelector('a-scene');
+  const startBtn = document.getElementById('startBtn');
+  const sceneEl = document.querySelector('a-scene');
 
-    startBtn.addEventListener('click', async () => {
-      try {
-        // Start MindAR system
-        const system = sceneEl.systems["mindar-image-system"];
-        await system.start();
-        startBtn.style.display = "none";
-      } catch (e) {
-        alert("Failed to start camera. Check permissions.");
-        console.error(e);
-      }
-    });
-  </script>
+  startBtn.addEventListener('click', () => {
+    sceneEl.emit('startAR');
+    startBtn.style.display = "none";
+  });
+
+  sceneEl.addEventListener('startAR', () => {
+    const system = sceneEl.systems["mindar-image-system"];
+    system.start();
+  });
+</script>
+
 </body>
 </html>
