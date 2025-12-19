@@ -6,150 +6,78 @@
   <title>8bitcow AR</title>
 
   <style>
-    body { margin: 0; overflow: hidden; background: #000; font-family: system-ui, -apple-system, sans-serif; }
-
-    /* UI overlay */
-    #ui {
-      position: fixed;
-      left: 14px; right: 14px; top: 14px;
-      background: rgba(0,0,0,0.80);
-      color: #fff;
-      padding: 12px 12px;
-      border-radius: 12px;
-      z-index: 2147483647;
-      backdrop-filter: blur(6px);
+    body { margin:0; overflow:hidden; background:#000; font-family: system-ui, -apple-system, sans-serif; }
+    #ui{
+      position:fixed; left:14px; right:14px; top:14px;
+      background:rgba(0,0,0,0.80); color:#fff;
+      padding:12px; border-radius:12px;
+      z-index:2147483647;
     }
-    #row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    #status { opacity: 0.95; }
-    button {
-      appearance: none;
-      border: 0;
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    #startBtn { background: #2f7d32; color: #fff; }
-    #stopBtn  { background: #444; color: #fff; display: none; }
-    #err {
-      margin-top: 10px;
-      font-size: 12px;
-      line-height: 1.35;
-      color: #ffb3b3;
-      white-space: pre-wrap;
-      display: none;
-    }
+    button{ border:0; border-radius:10px; padding:10px 14px; font-weight:700; cursor:pointer; }
+    #startBtn{ background:#2f7d32; color:#fff; }
+    #status{ margin-left:10px; opacity:0.95; }
+    #err{ margin-top:8px; font-size:12px; color:#ffb3b3; white-space:pre-wrap; display:none; }
   </style>
 
-  <!-- Local libraries (you MUST upload these) -->
-  <script src="./libs/three.min.js"></script>
+  <!-- MindAR v1.1.5 bundle (includes the three integration) -->
   <script src="./libs/mindar-image-three.prod.js"></script>
 </head>
-
 <body>
   <div id="ui">
-    <div id="row">
-      <button id="startBtn">Start Camera</button>
-      <button id="stopBtn">Stop</button>
-      <span id="status">Ready</span>
-    </div>
+    <button id="startBtn">Start Camera</button>
+    <span id="status">Ready</span>
     <div id="err"></div>
   </div>
 
-  <script>
-    const startBtn = document.getElementById('startBtn');
-    const stopBtn  = document.getElementById('stopBtn');
-    const statusEl = document.getElementById('status');
-    const errEl    = document.getElementById('err');
+<script>
+  const startBtn = document.getElementById('startBtn');
+  const statusEl = document.getElementById('status');
+  const errEl = document.getElementById('err');
 
-    let mindarThree = null;
+  let mindarThree;
 
-    function setStatus(s) { statusEl.textContent = s; }
-    function showError(e) {
-      const msg = e?.stack || e?.message || String(e);
-      errEl.style.display = 'block';
-      errEl.textContent = msg;
-      console.error(e);
+  function setStatus(s){ statusEl.textContent = s; }
+  function showErr(e){
+    errEl.style.display = 'block';
+    errEl.textContent = (e && e.stack) ? e.stack : String(e);
+    console.error(e);
+  }
+
+  startBtn.onclick = async () => {
+    try {
+      errEl.style.display = 'none'; errEl.textContent = '';
+      if (!window.MINDAR?.IMAGE?.MindARThree) throw new Error("MindAR global missing (wrong file/path).");
+
+      setStatus("Initializing…");
+
+      mindarThree = new window.MINDAR.IMAGE.MindARThree({
+        container: document.body,
+        imageTargetSrc: "./targets.mind"
+      });
+
+      const { renderer, scene, camera } = mindarThree;
+
+      const anchor = mindarThree.addAnchor(0);
+
+      // Debug cube
+      const cube = new THREE.Mesh(
+        new THREE.BoxGeometry(0.5,0.5,0.5),
+        new THREE.MeshNormalMaterial()
+      );
+      cube.position.y = 0.25;
+      anchor.group.add(cube);
+
+      setStatus("Requesting camera…");
+      await mindarThree.start();
+
+      setStatus("Running — point at marker");
+      renderer.setAnimationLoop(() => renderer.render(scene, camera));
+
+    } catch(e){
+      setStatus("Failed");
+      showErr(e);
     }
-
-    window.addEventListener('error', (ev) => showError(ev.error || ev.message));
-    window.addEventListener('unhandledrejection', (ev) => showError(ev.reason));
-
-    async function startAR() {
-      try {
-        errEl.style.display = 'none';
-        errEl.textContent = '';
-
-        if (!window.THREE) throw new Error("THREE not found. Check ./libs/three.min.js");
-const MindARThree =
-  window.MINDAR?.IMAGE?.MindARThree ||
-  window.MINDARThree ||
-  window.MINDAR?.MindARThree;
-
-if (!MindARThree) {
-  console.log("MindAR globals:", window);
-  throw new Error("MindAR loaded but global not found");
-}
-
-        setStatus("Initializing…");
-
-mindarThree = new MindARThree({
-          container: document.body,
-          imageTargetSrc: "./targets.mind"
-        });
-
-        const { renderer, scene, camera } = mindarThree;
-
-        // Simple light (not strictly needed for MeshNormalMaterial, but fine)
-        const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0);
-        scene.add(light);
-
-        // Anchor for target #0
-        const anchor = mindarThree.addAnchor(0);
-
-        // Debug cube to verify tracking
-        const cube = new THREE.Mesh(
-          new THREE.BoxGeometry(0.5, 0.5, 0.5),
-          new THREE.MeshNormalMaterial()
-        );
-        cube.position.y = 0.25;
-        anchor.group.add(cube);
-
-        setStatus("Requesting camera…");
-        await mindarThree.start();
-
-        setStatus("Running — point at marker");
-        startBtn.style.display = "none";
-        stopBtn.style.display = "inline-block";
-
-        renderer.setAnimationLoop(() => {
-          renderer.render(scene, camera);
-        });
-
-      } catch (e) {
-        setStatus("Failed");
-        showError(e);
-      }
-    }
-
-    async function stopAR() {
-      try {
-        if (!mindarThree) return;
-        setStatus("Stopping…");
-        await mindarThree.stop();
-        mindarThree.renderer.setAnimationLoop(null);
-        mindarThree = null;
-
-        setStatus("Stopped");
-        startBtn.style.display = "inline-block";
-        stopBtn.style.display = "none";
-      } catch (e) {
-        showError(e);
-      }
-    }
-
-    startBtn.addEventListener('click', startAR);
-    stopBtn.addEventListener('click', stopAR);
-  </script>
+  };
+</script>
 </body>
 </html>
