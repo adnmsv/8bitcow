@@ -11,7 +11,6 @@
   <style>
     html, body { margin:0; width:100%; height:100%; overflow:hidden; background:#000; }
 
-    /* Force the camera video to be visible and fullscreen */
     video {
       position: fixed !important;
       inset: 0 !important;
@@ -22,7 +21,6 @@
       background: #000 !important;
     }
 
-    /* A-Frame canvas overlay fullscreen, transparent background */
     canvas {
       position: fixed !important;
       inset: 0 !important;
@@ -40,18 +38,28 @@
       font-family: system-ui, -apple-system, sans-serif;
       display:flex; gap:10px; align-items:center; flex-wrap:wrap;
     }
+
     button {
       border:0; border-radius:10px;
       padding:10px 14px; font-weight:700;
       cursor:pointer; background:#2f7d32; color:#fff;
+    }
+
+    #err {
+      width: 100%;
+      margin-top: 6px;
+      font-size: 12px;
+      color: #ffb3b3;
+      white-space: pre-wrap;
     }
   </style>
 </head>
 
 <body>
   <div id="ui">
-    <button id="startBtn">Start Camera</button>
-    <span>Point at marker</span>
+    <button id="startBtn" disabled>Loading…</button>
+    <span id="status">Initializing scene…</span>
+    <div id="err"></div>
   </div>
 
   <a-scene
@@ -74,29 +82,68 @@
     </a-entity>
   </a-scene>
 
- <script>
-  const startBtn = document.getElementById('startBtn');
-  const sceneEl = document.querySelector('a-scene');
-  const ui = document.getElementById('ui');
+  <script>
+    const startBtn = document.getElementById('startBtn');
+    const statusEl = document.getElementById('status');
+    const errEl = document.getElementById('err');
+    const sceneEl = document.querySelector('a-scene');
 
-  const errLine = document.createElement("div");
-  errLine.style.marginTop = "8px";
-  errLine.style.fontSize = "12px";
-  errLine.style.color = "#ffb3b3";
-  ui.appendChild(errLine);
+    function setStatus(t){ statusEl.textContent = t; }
+    function setErr(t){ errEl.textContent = t || ""; }
 
-  startBtn.addEventListener('click', async () => {
-    try {
-      errLine.textContent = "";
-      const system = sceneEl.systems["mindar-image-system"];
-      await system.start();
-      startBtn.style.display = "none";
-    } catch (e) {
-      errLine.textContent = `Camera error: ${e?.name || "Unknown"} — ${e?.message || e}`;
-      console.error(e);
+    async function waitForScene() {
+      if (sceneEl.hasLoaded) return;
+      await new Promise(resolve => sceneEl.addEventListener('loaded', resolve, { once: true }));
     }
-  });
-</script>
 
+    async function getMindARSystem() {
+      // Wait until A-Frame scene is fully initialized
+      await waitForScene();
+
+      // Give one extra tick for systems/components registration
+      await new Promise(r => setTimeout(r, 0));
+
+      return sceneEl.systems && sceneEl.systems["mindar-image-system"];
+    }
+
+    (async () => {
+      try {
+        setStatus("Preparing…");
+        const system = await getMindARSystem();
+        if (!system) {
+          throw new Error("MindAR system not found. Check that mindar-image-aframe.prod.js is loaded and <a-scene mindar-image=...> exists.");
+        }
+        setStatus("Ready");
+        startBtn.disabled = false;
+        startBtn.textContent = "Start Camera";
+      } catch (e) {
+        setStatus("Failed");
+        setErr(e?.message || String(e));
+        console.error(e);
+      }
+    })();
+
+    startBtn.addEventListener('click', async () => {
+      try {
+        setErr("");
+        setStatus("Starting camera…");
+        startBtn.disabled = true;
+
+        const system = await getMindARSystem();
+        if (!system) throw new Error("MindAR system still not ready.");
+
+        await system.start();
+
+        setStatus("Running — point at marker");
+        startBtn.style.display = "none";
+      } catch (e) {
+        setStatus("Failed");
+        startBtn.disabled = false;
+        startBtn.textContent = "Start Camera";
+        setErr(`${e?.name || "Error"}: ${e?.message || e}`);
+        console.error(e);
+      }
+    });
+  </script>
 </body>
 </html>
