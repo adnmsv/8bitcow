@@ -79,6 +79,13 @@ canvas {
 
 <!-- MindAR v1.1.5 (includes Three.js internally) -->
 <script src="./libs/mindar-image-three.prod.js"></script>
+
+<!-- Expose MindAR's THREE globally for legacy loaders -->
+<script>
+  window.THREE = window.MINDAR.IMAGE.THREE;
+</script>
+
+<!-- Legacy GLTFLoader attaches to window.THREE -->
 <script src="./libs/GLTFLoader.js"></script>
 
 </head>
