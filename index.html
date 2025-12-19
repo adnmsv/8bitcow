@@ -74,20 +74,29 @@
     </a-entity>
   </a-scene>
 
-  <script>
-    const startBtn = document.getElementById('startBtn');
-    const sceneEl = document.querySelector('a-scene');
+ <script>
+  const startBtn = document.getElementById('startBtn');
+  const sceneEl = document.querySelector('a-scene');
+  const ui = document.getElementById('ui');
 
-    startBtn.addEventListener('click', async () => {
-      try {
-        const system = sceneEl.systems["mindar-image-system"];
-        await system.start();
-        startBtn.style.display = "none";
-      } catch (e) {
-        alert("Camera failed. Check Chrome camera permission for github.io");
-        console.error(e);
-      }
-    });
-  </script>
+  const errLine = document.createElement("div");
+  errLine.style.marginTop = "8px";
+  errLine.style.fontSize = "12px";
+  errLine.style.color = "#ffb3b3";
+  ui.appendChild(errLine);
+
+  startBtn.addEventListener('click', async () => {
+    try {
+      errLine.textContent = "";
+      const system = sceneEl.systems["mindar-image-system"];
+      await system.start();
+      startBtn.style.display = "none";
+    } catch (e) {
+      errLine.textContent = `Camera error: ${e?.name || "Unknown"} — ${e?.message || e}`;
+      console.error(e);
+    }
+  });
+</script>
+
 </body>
 </html>
