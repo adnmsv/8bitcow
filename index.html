@@ -2,173 +2,90 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
   <title>8bitcow AR</title>
 
   <style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #000;
-    font-family: system-ui, -apple-system, sans-serif;
-  }
-
-  /* Fullscreen camera feed */
-video {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  object-fit: cover !important;
-  z-index: 1 !important;
-}
-
-/* Fullscreen 3D overlay */
-canvas {
-  position: fixed !important;
-  inset: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  z-index: 2 !important;
-  background: transparent !important;
-}
-
-
-  /* UI overlay stays on top */
-  #ui {
-    position: fixed;
-    top: 14px;
-    left: 14px;
-    right: 14px;
-    background: rgba(0,0,0,0.8);
-    color: #fff;
-    padding: 12px;
-    border-radius: 12px;
-    z-index: 999999;
-  }
-
-  button {
-    border: none;
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-weight: 600;
-    cursor: pointer;
-    background: #2f7d32;
-    color: white;
-  }
-
-  #status {
-    margin-left: 10px;
-    opacity: 0.9;
-  }
-
-  #error {
-    margin-top: 8px;
-    font-size: 12px;
-    color: #ffb3b3;
-    white-space: pre-wrap;
-    display: none;
-  }
-</style>
-
-
+    html, body { margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000; }
+    video { position:fixed; inset:0; width:100vw; height:100vh; object-fit:cover; z-index:1; }
+    canvas { position:fixed; inset:0; width:100vw; height:100vh; z-index:2; background:transparent; }
+    #ui{
+      position:fixed; top:14px; left:14px; right:14px;
+      background:rgba(0,0,0,0.8); color:#fff; padding:12px; border-radius:12px;
+      z-index:999999; font-family: system-ui, -apple-system, sans-serif;
+    }
+    button{ border:0; border-radius:10px; padding:10px 14px; font-weight:700; cursor:pointer; background:#2f7d32; color:#fff; }
+    #status{ margin-left:10px; opacity:.9; }
+    #error{ margin-top:8px; font-size:12px; color:#ffb3b3; white-space:pre-wrap; display:none; }
   </style>
-
-<!-- MindAR v1.1.5 (includes Three.js internally) -->
-<script src="./libs/mindar-image-three.prod.js"></script>
-
-<!-- Expose MindAR's THREE globally for legacy loaders -->
-<script>
-  window.THREE = window.MINDAR.IMAGE.THREE;
-</script>
-
-<!-- Legacy GLTFLoader attaches to window.THREE -->
-<script src="./libs/GLTFLoader.js"></script>
-
 </head>
 
-
 <body>
-
   <div id="ui">
     <button id="startBtn">Start Camera</button>
     <span id="status">Ready</span>
     <div id="error"></div>
   </div>
 
-<script>
-  const startBtn = document.getElementById("startBtn");
-  const statusEl = document.getElementById("status");
-  const errorEl  = document.getElementById("error");
+  <script type="module">
+    import * as THREE from "./libs-esm/three.module.js";
+    import { GLTFLoader } from "./libs-esm/GLTFLoader.js";
+    import { MindARThree } from "./libs-esm/mindar-image-three.prod.js";
 
-  let mindarThree = null;
+    const startBtn = document.getElementById("startBtn");
+    const statusEl = document.getElementById("status");
+    const errorEl  = document.getElementById("error");
 
-  function setStatus(text) {
-    statusEl.textContent = text;
-  }
-
-  function showError(err) {
-    errorEl.style.display = "block";
-    errorEl.textContent = err?.stack || err?.message || String(err);
-    console.error(err);
-  }
-
-  startBtn.onclick = async () => {
-    try {
-      errorEl.style.display = "none";
-      errorEl.textContent = "";
-
-      if (!window.MINDAR?.IMAGE?.MindARThree) {
-        throw new Error("MindAR not loaded");
-      }
-
-      setStatus("Initializing…");
-
-      mindarThree = new window.MINDAR.IMAGE.MindARThree({
-        container: document.body,
-        imageTargetSrc: "./targets.mind"
-      });
-
-      const { renderer, scene, camera } = mindarThree;
-renderer.setClearAlpha(0);
-const THREE = window.THREE;
-
-// Load cow model
-const loader = new THREE.GLTFLoader();
-
-loader.load(
-  "./cow.glb",
-  (gltf) => {
-    const cow = gltf.scene;
-    cow.scale.set(0.3, 0.3, 0.3);   // adjust if needed
-    cow.position.y = 0.0;
-    anchor.group.add(cow);
-  },
-  undefined,
-  (error) => {
-    console.error("GLB load error:", error);
-  }
-);
-
-
-      setStatus("Requesting camera…");
-      await mindarThree.start();
-
-      setStatus("Running — point at marker");
-
-      renderer.setAnimationLoop(() => {
-        renderer.render(scene, camera);
-      });
-
-    } catch (err) {
-      setStatus("Failed");
-      showError(err);
+    function setStatus(t){ statusEl.textContent = t; }
+    function showErr(e){
+      errorEl.style.display = "block";
+      errorEl.textContent = e?.stack || e?.message || String(e);
+      console.error(e);
     }
-  };
-</script>
 
+    let mindarThree;
+
+    startBtn.onclick = async () => {
+      try {
+        errorEl.style.display = "none";
+        errorEl.textContent = "";
+
+        setStatus("Initializing…");
+
+        mindarThree = new MindARThree({
+          container: document.body,
+          imageTargetSrc: "./targets.mind"
+        });
+
+        const { renderer, scene, camera } = mindarThree;
+        renderer.setClearAlpha(0);
+
+        const anchor = mindarThree.addAnchor(0);
+
+        setStatus("Loading cow…");
+        const loader = new GLTFLoader();
+        loader.load(
+          "./cow.glb",
+          (gltf) => {
+            const cow = gltf.scene;
+            cow.scale.set(0.3, 0.3, 0.3);
+            cow.position.set(0, 0, 0);
+            anchor.group.add(cow);
+            setStatus("Requesting camera…");
+          },
+          undefined,
+          (err) => { throw err; }
+        );
+
+        await mindarThree.start();
+        setStatus("Running — point at marker");
+
+        renderer.setAnimationLoop(() => renderer.render(scene, camera));
+      } catch (e) {
+        setStatus("Failed");
+        showErr(e);
+      }
+    };
+  </script>
 </body>
 </html>
